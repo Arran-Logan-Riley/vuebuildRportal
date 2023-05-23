@@ -1,18 +1,22 @@
 <template>
   <div>
     <h1>[Vue FireBase Portal]</h1>
-    <button class="button" @click="handleGoogleLogin">Login With Google</button>
+    <button class="button" v-if="showLoginButton" @click="handleGoogleLogin">Login With Google</button>
+    <button class="button" v-if="showSignOutButton" @click="handleGoogleSignOut">Sign Out</button>
+    <div>
+      <label class="welcomeMessage" v-if="showUserLoginName">Welcome: {{ userDisplayName }}</label>
+    </div>
     <section>
       <ul>
-      <li class="container" v-for="item in fireStoreData" :key="item.id">
-        <div class="message">{{ item.projectName }}
-        <div>Start Date:{{ item.startDate }}</div>
-        <div>End Date:{{ item.endDate }}</div>
-        <div>Material Required: {{ item.material }} Number: {{ item.materialNum }}</div>
-        <div>Message ID: {{ item.msgId }}</div>
-      </div> 
-      </li>
-    </ul>
+        <li class="container" v-for="item in fireStoreData" :key="item.id">
+          <div class="message">{{ item.projectName }}
+            <div>Start Date:{{ item.startDate }}</div>
+            <div>End Date:{{ item.endDate }}</div>
+            <div>Material Required: {{ item.material }} Number: {{ item.materialNum }}</div>
+            <div>Message ID: {{ item.msgId }}</div>
+          </div>
+        </li>
+      </ul>
     </section>
 
   </div>
@@ -22,7 +26,7 @@
 import { ref } from 'vue';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignout } from 'firebase/auth';
 
 import firebaseConfig from './config.json'
 
@@ -37,20 +41,42 @@ export default {
   setup() {
     //create a firestore data refrence to be used in the query method
     const fireStoreData = ref([]);
+    const showLoginButton = ref(true);
+    const showSignOutButton = ref(false);
+    const showUserLoginName = ref(false);
+    const userDisplayName = ref(null);
+    const user = ref(null);
+    
 
     const handleGoogleLogin = async () => {
       try {
         const result = await signInWithPopup(auth, provider);
-        // Handle successful login
         const { user } = result;
         console.log('Logged in user:', user);
-        // Call the firebase query only once the user is logged in.
         queryFirestore();
+        showLoginButton.value = false;
+        showSignOutButton.value = true;
+        showUserLoginName.value = true;
+        // Update the user value with the logged-in user
+        user.value = user;
+        userDisplayName.value = user.displayName;
       } catch (error) {
-        // Handle login error
         console.error('Login error:', error);
       }
     };
+    const handleGoogleSignOut = async () => {
+      try {
+        await firebaseSignout(auth)
+        showLoginButton.value = true;
+        showSignOutButton.value = false;
+        showUserLoginName.value = false;
+        user.value = null;
+        fireStoreData.value = null;
+        console.log(user);
+      } catch (error) {
+        console.log(error);
+      }
+    }
     //Method to call my firestore DB theen in a data snapshot, save the data to a data array.
     const queryFirestore = async () => {
       try {
@@ -73,7 +99,12 @@ export default {
     return {
       fireStoreData,
       handleGoogleLogin,
+      handleGoogleSignOut,
       queryFirestore,
+      showLoginButton,
+      showSignOutButton,
+      showUserLoginName,
+      userDisplayName,
     };
   },
 };
@@ -87,53 +118,54 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
-  
+
 }
 
-body{
+body {
   background-color: #0b1a26;
 }
 
 .message {
   align-items: center;
   max-width: 400px;
- padding-left: 30px;
- padding-right: 30px;
- padding-bottom: 5px;
- padding-top: 2px;
- margin: 10px;
- border-radius: 25px;
- border-color: white;
- border: 2px;
- color: white;
- border-style: solid;
- background: #0b93f6;
+  padding-left: 30px;
+  padding-right: 30px;
+  padding-bottom: 5px;
+  padding-top: 2px;
+  margin: 10px;
+  border-radius: 25px;
+  border-color: white;
+  border: 2px;
+  color: white;
+  border-style: solid;
+  background: #0b93f6;
 }
 
-.button{
-    background: none;
-    margin: 10px;
-    height: 40px;
-    border: 2px solid #ffd52d;
-    border-radius: 50px;
-    box-sizing: border-box;
-    font-size: 26px;
-    color: #ffd52d;
-    outline: none;
-    transition: .5s;
+.button {
+  background: none;
+  margin: 10px;
+  height: 40px;
+  border: 2px solid #ffd52d;
+  border-radius: 50px;
+  box-sizing: border-box;
+  font-size: 26px;
+  color: #ffd52d;
+  outline: none;
+  transition: .5s;
 }
 
-.button:hover{
-    background: #3b3640;
-    border-radius: 10px;
+.button:hover {
+  background: #3b3640;
+  border-radius: 10px;
 }
 
-.container{
+.container {
   display: flex;
   flex-wrap: wrap;
 }
 
-ul, li {
+ul,
+li {
   text-align: left;
   list-style: none;
 }
